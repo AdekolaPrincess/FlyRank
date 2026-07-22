@@ -31,9 +31,14 @@ def health_check():
     return {"status": "ok"}
 
 @app.get("/tasks", summary = "List all tasks")
-def get_tasks():
-    """Returns the full list if tasks currently in memory."""
-    return tasks
+def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
+    """Returns tasks, optionally filtered by done status and/or a search term in the title."""
+    result = tasks
+    if done is not None:
+        result = [task for task in result if task["done"] == done]
+    if search is not None:
+        result = [task for task in result if search.lower() in task["title"].lower()]
+    return result
 
 @app.get("/tasks/{task_id}", summary = "Get a single task")
 def get_task(task_id: int):
