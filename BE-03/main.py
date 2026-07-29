@@ -87,10 +87,12 @@ def create_task(new_task: TaskCreate):
     """Creates a new task with the given title. Title cannot be empty."""
     if not new_task.title.strip():
         raise HTTPException(status_code = 400, detail = "Title cannot be empty")
-    next_id = max((task["id"] for task in tasks), default = 0) + 1
-    task = {"id": next_id, "title": new_task.title, "done": False}
-    tasks.append(task)
-    return task
+    conn = get_db_connection()
+    cursor = conn.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (new_task.title, 0))
+    conn.commit()
+    new_id = cursor.lastrowid
+    conn.close()
+    return {"id": new_id, "title": new_task.title, "done": False}
 
 @app.put("/tasks/{task_id}", summary = "Update a task")
 def update_task(task_id: int, updates: TaskUpdate):
