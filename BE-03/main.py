@@ -61,9 +61,13 @@ def health_check():
 @app.get("/tasks", summary = "List all tasks")
 def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
     """Returns tasks, optionally filtered by done status and/or a search term in the title."""
-    result = tasks
+    conn = get_db_connection()
+    rows = conn.execute("SELECT * FROM tasks").fetchall()
+    conn.close()
+
+    result = [dict(row) for row in rows]
     if done is not None:
-        result = [task for task in result if task["done"] == done]
+        result = [task for task in result if bool(task["done"]) == done]
     if search is not None:
         result = [task for task in result if search.lower() in task["title"].lower()]
     return result
@@ -71,10 +75,12 @@ def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
 @app.get("/tasks/{task_id}", summary = "Get a single task")
 def get_task(task_id: int):
     """Returns one task by id, or 404 if it doesn't exist."""
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    raise HTTPException(status_code = 404, detail = f"Task {task_id} not found")
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code = 404, detail = f"Task {task_id} not found")
+    return dict(row)
 
 @app.post("/tasks", status_code = 201, summary = "Create a task")
 def create_task(new_task: TaskCreate):
