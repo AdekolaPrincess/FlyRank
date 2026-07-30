@@ -1,14 +1,14 @@
 # BE-03 — Task API with SQLite
 
-A CRUD (Create, Read, Update, Delete) API for managing a to-do list, built with FastAPI. This is the direct sequel to BE-02: the API's endpoints, request/response shapes, and status codes are unchanged — only the storage layer moved from an in-memory Python list to a real SQLite database, so data now survives a server restart.
+A CRUD (Create, Read, Update, Delete) API for managing a to-do list, built with FastAPI. This is the direct sequel to BE-02: the API's endpoints, request/response shapes, and status codes are unchanged, only the storage layer moved from an in-memory Python list to a real SQLite database, so data now survives a server restart.
 
 ## Why SQLite
 
-SQLite was chosen because it needs no separate server to install or run — the entire database is a single file (`tasks.db`) that Python's built-in `sqlite3` module can open directly. For a small project like this, it gives real persistence (data survives restarts) with zero setup cost, which is exactly what this assignment needed to prove: swapping storage layers without touching the API.
+SQLite was chosen because it needs no separate server to install or run the entire database is a single file (`tasks.db`) that Python's built-in `sqlite3` module can open directly. For a small project like this, it gives real persistence (data survives restarts) with zero setup cost, which is exactly what this assignment needed to prove: swapping storage layers without touching the API.
 
 ## Where the database lives
 
-`tasks.db` is created automatically the first time the app starts — it is **not** committed to git (it's listed in `.gitignore`), so every fresh clone of this repo starts with a clean database. On first run, the app creates the `tasks` table and seeds 3 example tasks, but only if the table is empty — restarting the app never duplicates them.
+`tasks.db` is created automatically the first time the app starts, it is **not** committed to git (it's listed in `.gitignore`), so every fresh clone of this repo starts with a clean database. On first run, the app creates the `tasks` table and seeds 3 example tasks, but only if the table is empty, restarting the app never duplicates them.
 
 ## How to run it
 
@@ -35,19 +35,19 @@ Then visit `http://localhost:8000/docs` for interactive Swagger UI, or `http://l
 
 ## Proof the API didn't change
 
-The same endpoints, same request/response shapes, and same status codes from BE-02 (in-memory) still work identically here — only the code *behind* each route changed, from reading/writing a Python list to running SQL queries against `tasks.db`. That identical behavior, before and after, is exactly what proves storage is just an implementation detail: clients calling this API never need to know or care whether their data sits in memory, in SQLite, or in a large production database.
+The same endpoints, same request/response shapes, and same status codes from BE-02 (in-memory) still work identically here. Only the code *behind* each route changed, from reading/writing a Python list to running SQL queries against `tasks.db`. That identical behavior, before and after, is exactly what proves storage is just an implementation detail: clients calling this API never need to know or care whether their data sits in memory, in SQLite, or in a large production database.
 
 ## Exploring the database directly
 
-Opened `tasks.db` in [DB Browser for SQLite](https://sqlitebrowser.org/) and ran SQL by hand in the "Execute SQL" tab:
+Opened `tasks.db` in [DB Browser for SQLite](tasks-screenshot.png) and ran SQL by hand in the "Execute SQL" tab:
 
 ```sql
-UPDATE tasks SET done = 1;
+SELECT * FROM tasks WHERE done = 1;
 ```
 
-This marked every task in the table as done. After clicking "Write Changes," calling `GET /tasks` through the running API immediately showed every task with `done: true` — with no server restart — proving the API and DB Browser read the exact same file as a single source of truth.
+This showed every task in the table that has been done.
 
-![Tasks table in DB Browser for SQLite](swagger-screenshot.png)
+![Tasks table in DB Browser for SQLite](tasks2-screenshot.png)
 
 ## Tech stack
 
