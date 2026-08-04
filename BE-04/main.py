@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
@@ -70,6 +70,11 @@ def health_check():
     """Simple check to confirm the server is alive."""
     return {"status": "ok"}
 
+@app.get("/public/info", summary = "Public info")
+def public_info():
+    """Open to everyone, no login required"""
+    return {"message": "Welcome stranger! This info is piblic."}
+
 @app.post("/auth/signup", status_code = 201, summary = "Create a new user account")
 def signup(credentials: AuthCredentials):
     """Registers a new user with Supabase Auth"""
@@ -100,6 +105,15 @@ def login(credentials: AuthCredentials):
         "access_token": result.session.access_token,
         "refresh_token" : result.session.refresh_token
     }
+
+@app.get("/protected/profile", summary = "Get logged-in user's profile")
+def get_profile(request: Request):
+    """Requires a bearer token to be present (not verified)."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code= 401, detail = "Access token required")
+    token = auth_header.split(" ")[1]
+    return {"message": "Token received (not yet verified)", "token_preview": token[:10]}
 
 @app.get("/tasks", summary = "List all tasks")
 def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
