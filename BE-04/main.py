@@ -113,7 +113,16 @@ def get_profile(request: Request):
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code= 401, detail = "Access token required")
     token = auth_header.split(" ")[1]
-    return {"message": "Token received (not yet verified)", "token_preview": token[:10]}
+    try:
+        user_response = supabase.auth.get_user(token)
+    except Exception:
+        raise HTTPException(status_code= 401, detail= "Invalid or expired token")
+    user = user_response.user
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at
+    }
 
 @app.get("/tasks", summary = "List all tasks")
 def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
