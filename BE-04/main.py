@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
@@ -57,6 +57,18 @@ class AuthCredentials(BaseModel):
     email: str
     password: str
 
+def get_current_user(request: Request):
+    """Reusable guard: extracts and verifies the bearer token, returns the user."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code= 401, detail= "Access token required")
+    token = auth_header.split(" ")[1]
+    try:
+        user_response = supabase.auth.get_user(token)
+    except Exception:
+        raise HTTPException(status_code= 401, detail= "Invalid or expired token")
+    return user_response.user
+
 @app.get("/", summary = "API info")
 def read_root():
     """Returns basic info about this API."""
@@ -107,22 +119,18 @@ def login(credentials: AuthCredentials):
     }
 
 @app.get("/protected/profile", summary = "Get logged-in user's profile")
-def get_profile(request: Request):
-    """Requires a bearer token to be present (not verified)."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code= 401, detail = "Access token required")
-    token = auth_header.split(" ")[1]
-    try:
-        user_response = supabase.auth.get_user(token)
-    except Exception:
-        raise HTTPException(status_code= 401, detail= "Invalid or expired token")
-    user = user_response.user
+def get_profile(user = Depends(get_current_user)):
+    """Returns the logged-in user's profile protected by get_current_user."""
     return {
         "id": user.id,
         "email": user.email,
         "created_at": user.created_at
     }
+
+@app.get("/protected/dashboard", summary = "Protected route example")
+def get_dashboard(user = Depends(get_current_user)):
+    """Another protected route using the same middleware, no new auth code"""
+    return {"message": f"Welcome to your dashboard, {user.email}!"}
 
 @app.get("/tasks", summary = "List all tasks")
 def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
@@ -195,3 +203,9 @@ def delete_task(task_id: int):
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
     conn.close()
+
+@app.post("/auth/logout", status_code= 204, summary= "Log out the current user")
+def logout(user = Depends(get_current_user)):
+    """Ends the user's session and it requires a valid token"""
+    supabase.auth.sign_out()
+    return None
