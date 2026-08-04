@@ -1,8 +1,16 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
+load_dotenv()
+
+SUPABASE_URL =  os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 tasks = [
     {"id": 1, "title": "Buy milk", "done": False},
@@ -45,6 +53,10 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = None
     done: Optional[bool] = None
 
+class AuthCredentials(BaseModel):
+    email: str
+    password: str
+
 @app.get("/", summary = "API info")
 def read_root():
     """Returns basic info about this API."""
@@ -57,6 +69,37 @@ def read_root():
 def health_check():
     """Simple check to confirm the server is alive."""
     return {"status": "ok"}
+
+@app.post("/auth/signup", status_code = 201, summary = "Create a new user account")
+def signup(credentials: AuthCredentials):
+    """Registers a new user with Supabase Auth"""
+    if not credentials.email.strip() or not credentials.password.strip():
+        raise HTTPException(status_code = 400, detail = "Email and password are required")
+    try:
+        result = supabase.auth.sign_up({
+            "email": credentials.email,
+            "password": credentials.password
+        })
+    except Exception as e:
+        raise HTTPException(status_code = 400, detail = str(e))
+    return {"user": result.user}
+
+@app.post("/auth/login", summary = "Log in and receive JWT")
+def login(credentials: AuthCredentials):
+    """Authenticates a user with Supabase Auth and return access + refresh tokens."""
+    if not credentials.email.strip() or not credentials.password.strip():
+        raise HTTPException(status_code = 400, detail = "Email and password are required")
+    try:
+        result = supabase.auth.sign_in_with_password({
+            "email" : credentials.email,
+            "password" : credentials.password
+        })
+    except Exception as e:
+        raise HTTPException( status_code= 401, detail = "Invalid login credentials")
+    return{
+        "access_token": result.session.access_token,
+        "refresh_token" : result.session.refresh_token
+    }
 
 @app.get("/tasks", summary = "List all tasks")
 def get_tasks(done: Optional[bool] = None, search: Optional[str] = None):
