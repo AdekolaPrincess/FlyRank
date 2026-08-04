@@ -1,11 +1,13 @@
 import os
 from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
 import sqlite3
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
+security = HTTPBearer()
 load_dotenv()
 
 SUPABASE_URL =  os.getenv("SUPABASE_URL")
@@ -57,12 +59,9 @@ class AuthCredentials(BaseModel):
     email: str
     password: str
 
-def get_current_user(request: Request):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Reusable guard: extracts and verifies the bearer token, returns the user."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code= 401, detail= "Access token required")
-    token = auth_header.split(" ")[1]
+    token = credentials.credentials
     try:
         user_response = supabase.auth.get_user(token)
     except Exception:
