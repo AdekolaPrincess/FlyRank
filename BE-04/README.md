@@ -73,3 +73,17 @@ Visit `http://localhost:8000/docs` to see interactive documentation. Protected r
 ![Swagger UI 2](swagger-screenshot2.png)
 ![Protected dashboard success](swagger-dashboard.png)
 
+
+## Frontend demo
+
+A simple browser-based frontend (`frontend/index.html`) is included for manually testing the auth flow without curl or Swagger. It's a single static HTML file — no build step, no framework — that calls the API directly using JavaScript's `fetch()`.
+
+To use it:
+1. Make sure the backend server is running (`uvicorn main:app --reload --port 8000`)
+2. Open `frontend/index.html` directly in your browser
+
+Flow: sign up → automatically moves to the login screen → log in → view profile/dashboard data or log out, all backed by real API calls.
+
+![Sign up screen](frontend/Sign_up.png)
+![Logged in / protected view](frontend/Logged_in.png)
+

@@ -6,6 +6,7 @@ from typing import Optional
 import sqlite3
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from fastapi.middleware.cors import CORSMiddleware
 
 security = HTTPBearer()
 load_dotenv()
@@ -46,6 +47,12 @@ def init_db():
     conn.close()
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 init_db()
 
 class TaskCreate(BaseModel):
