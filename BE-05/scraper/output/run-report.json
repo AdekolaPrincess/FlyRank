@@ -1,0 +1,11 @@
+{
+  "start_time": "2026-08-14T12:32:21.162436+00:00",
+  "duration_seconds": 2.109573,
+  "catalogue_pages_fetched": 3,
+  "unique_book_urls_discovered": 60,
+  "cache_hits": 63,
+  "valid_records": 60,
+  "invalid_records": 0,
+  "failed_pages": 0,
+  "failed_page_details": []
+}

@@ -10,6 +10,8 @@ from typing import Optional
 
 USER_AGENT = "FlyRankInternshipA9/1.0 (+https://github.com/AdekolaPrincess/FlyRank)"
 TIMEOUT_SECONDS = 10
+cache_hit_count = 0
+
 
 class Book(BaseModel):
     title: str
@@ -22,24 +24,48 @@ class Book(BaseModel):
     source_page: str
     fetched_at: str
 
-def fetch_page(url, cache_path):
+
+def fetch_page(url, cache_path, retry=True):
     if os.path.exists(cache_path):
+        global cache_hit_count
+        cache_hit_count += 1
         print(f"CACHE HIT: {cache_path}")
-        with open(cache_path, "r", encoding = "utf-8") as f:
+        with open(cache_path, "r", encoding="utf-8") as f:
             return f.read()
 
     print(f"FETCH: {url}")
     headers = {"User-Agent": USER_AGENT}
-    response = requests.get(url, headers = headers, timeout = TIMEOUT_SECONDS)
+
+    try:
+        response = requests.get(url, headers=headers, timeout=TIMEOUT_SECONDS)
+    except requests.exceptions.RequestException as e:
+        if retry:
+            print(f"RETRYING after error: {e}")
+            time.sleep(1)
+            return fetch_page(url, cache_path, retry=False)
+        raise
+
     response.encoding = "utf-8"
     print(f"Status code: {response.status_code}, size: {len(response.text)} bytes")
 
+    if response.status_code == 404 or response.status_code == 403:
+        raise Exception(f"Failed to fetch {url}: status {response.status_code} (not retrying)")
+
+    if response.status_code >= 500 and retry:
+        print(f"RETRYING after server error {response.status_code}")
+        time.sleep(1)
+        return fetch_page(url, cache_path, retry=False)
+
     if response.status_code != 200:
         raise Exception(f"Failed to fetch {url}: status {response.status_code}")
-    with open(cache_path, "w", encoding = "utf-8") as f:
+
+    with open(cache_path, "w", encoding="utf-8") as f:
         f.write(response.text)
+
     time.sleep(0.5)
+
     return response.text
+
 
 def extract_book_links(html, page_url):
     soup = BeautifulSoup(html, "html.parser")
@@ -53,6 +79,7 @@ def extract_book_links(html, page_url):
 
     return book_links
 
+
 def find_next_page_url(html, page_url):
     soup = BeautifulSoup(html, "html.parser")
     next_link = soup.select_one("li.next a")
@@ -61,17 +88,17 @@ def find_next_page_url(html, page_url):
     href = next_link["href"]
     return urljoin(page_url, href)
 
+
 def url_to_cache_filename(url):
     slug = url.rstrip("/").split("/")[-2]
     return f"book-{slug}.html"
+
 
 def extract_book_details(html, product_url, source_page):
     soup = BeautifulSoup(html, "html.parser")
 
     title = soup.select_one("div.product_main h1").get_text(strip=True)
-
     price_text = soup.select_one("p.price_color").get_text(strip=True)
-
     availability_text = soup.select_one("p.availability").get_text(strip=True)
 
     rating_tag = soup.select_one("p.star-rating")
@@ -91,12 +118,17 @@ def extract_book_details(html, product_url, source_page):
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 
+
 def parse_price(price_text):
     cleaned = price_text.replace("£", "").strip()
     return float(cleaned)
 
+
 if __name__ == "__main__":
+    run_start_time = datetime.now(timezone.utc)
     os.makedirs("cache", exist_ok=True)
+    os.makedirs("output", exist_ok=True)
+
 
     all_links = []
     page_number = 1
@@ -119,6 +151,7 @@ if __name__ == "__main__":
         if url not in seen_urls:
             seen_urls.add(url)
             unique_links.append((url, source_page))
+            
 
     print(f"catalogue_pages={page_number - 1}")
     print(f"discovered={len(all_links)}")
@@ -138,6 +171,7 @@ if __name__ == "__main__":
             failed_pages.append({"url": book_url, "reason": str(e)})
 
     print(f"detail_pages={len(all_books)}")
+
 
     valid_books = []
     invalid_records = []
@@ -163,8 +197,6 @@ if __name__ == "__main__":
                 "reason": str(e),
             })
 
-    os.makedirs("output", exist_ok=True)
-
     with open(os.path.join("output", "books.json"), "w", encoding="utf-8") as f:
         json.dump(valid_books, f, indent=2, ensure_ascii=False)
 
@@ -173,3 +205,25 @@ if __name__ == "__main__":
 
     print(f"valid_records={len(valid_books)}")
     print(f"invalid_records={len(invalid_records)}")
+
+
+    run_end_time = datetime.now(timezone.utc)
+    duration_seconds = (run_end_time - run_start_time).total_seconds()
+
+    run_report = {
+        "start_time": run_start_time.isoformat(),
+        "duration_seconds": duration_seconds,
+        "catalogue_pages_fetched": page_number - 1,
+        "unique_book_urls_discovered": len(unique_links),
+        "cache_hits": cache_hit_count,
+        "valid_records": len(valid_books),
+        "invalid_records": len(invalid_records),
+        "failed_pages": len(failed_pages),
+        "failed_page_details": failed_pages,
+    }
+
+    with open(os.path.join("output", "run-report.json"), "w", encoding="utf-8") as f:
+        json.dump(run_report, f, indent=2, ensure_ascii=False)
+
+    print(f"failed_pages={len(failed_pages)}")
+    print("Run report saved to output/run-report.json")
