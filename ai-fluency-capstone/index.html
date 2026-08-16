@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Fluency Capstone</title>
+<meta name="description" content="Princess's personal site: about, projects, and a live personal agent.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="site-title">Princess.dev</a>
+    <nav class="site-nav">
+      <a href="index.html" aria-current="page">About</a>
+      <a href="projects.html">Projects</a>
+      <a href="agent.html">Agent</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="agent-status">
+      <span class="dot"></span>
+      <span class="label">agent: online</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section class="hero">
+      <span class="eyebrow">Field Log</span>
+      <h1>Hi, I'm Adekola Princess.</h1>
+      <p style="font-size:1.1rem; max-width:60ch;">
+        [I'm learning to work with AI as a real tool, not a toy.
+        This site tracks that process: what I built, what I shipped,
+        and the agent I put together myself."]
+      </p>
+
+      <div class="timeline">
+        <div class="tick"><b>01</b>Learn the stack</div>
+        <div class="tick"><b>02</b>Define the brand</div>
+        <div class="tick"><b>03</b>Build the site</div>
+        <div class="tick active"><b>04</b>Ship the agent</div>
+      </div>
+    </section>
+
+    <section>
+      <span class="eyebrow">Now</span>
+      <h2>What I'm working on</h2>
+      <p>
+        I am learning AI Fluency and Backend AI Engineering. And I'm working on 
+        understanding AI as a tool for AI Fluency while for Backend, I am working on the CRUD API, 
+        how to scrape website and in summary how to build reliable backend systems.
+      </p>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">© <span id="year"></span> Adekola Princess. Built by hand, no framework.</div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

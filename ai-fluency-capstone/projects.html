@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="site-title">[your-name].dev</a>
+    <nav class="site-nav">
+      <a href="index.html">About</a>
+      <a href="projects.html" aria-current="page">Projects</a>
+      <a href="agent.html">Agent</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="agent-status">
+      <span class="dot"></span>
+      <span class="label">agent: online</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <span class="eyebrow">Projects</span>
+    <h1>Things I've built</h1>
+    <p style="max-width:60ch;">This entails what I've made while learning backend engineering</p>
+
+  
+    <div class="card">
+      <h3>CRUD API</h3>
+      <p>A FastAPI backend that performs full CRUD on a to-do list, backed by a persistent SQLite database, that taught me how cleanly an API can be separated from the storage layer underneath it.</p>
+      <div class="tags">
+        <span class="tag">CRUD</span>
+        <span class="tag">SQLite</span>
+      </div>
+      <div class="card-links">
+        <a href="https://github.com/AdekolaPrincess/FlyRank/tree/main/BE-03" target="_blank" rel="noopener">Repo →</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>A polite Website Scarper</h3>
+      <p>Built a polite web scraper that turns messy HTML into clean, validated JSON — with caching, rate-limiting, and graceful failure handling baked in. The biggest lesson: a good scraper is defined less by what it extracts and more by how respectfully it behaves while doing it.</p>
+      <div class="tags">
+        <span class="tag">Wrb scraping</span>
+      </div>
+      <div class="card-links">
+        <a href="https://github.com/AdekolaPrincess/FlyRank/tree/main/BE-05" target="_blank" rel="noopener">Repo →</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">© <span id="year"></span> Adekola Princess.</div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

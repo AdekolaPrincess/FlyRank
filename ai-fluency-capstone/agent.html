@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="site-title">Princess.dev</a>
+    <nav class="site-nav">
+      <a href="index.html">About</a>
+      <a href="projects.html">Projects</a>
+      <a href="agent.html" aria-current="page">Agent</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="agent-status">
+      <span class="dot"></span>
+      <span class="label">agent: online</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <span class="eyebrow">Live demo</span>
+    <h1>Talk to my agent</h1>
+    <p style="max-width:60ch;"> This is a small agent I built and shipped as part of my AI fluency capstone. Ask it about my projects.</p>
+
+    <div class="chat-shell">
+      <div class="chat-log" id="chatLog">
+        <div class="msg agent">Hi ask me anything about Princess's work.</div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chatInput" type="text" placeholder="Type a message…" autocomplete="off">
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">© <span id="year"></span> Princess. Agent responses are generated, not pre-written.</div>
+</footer>
+
+<script>
+document.getElementById('year').textContent = new Date().getFullYear();
+
+const log = document.getElementById('chatLog');
+const input = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function addMsg(text, who) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+  addMsg(text, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+  addMsg('…', 'agent');
+  const thinkingBubble = log.lastChild;
+
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    thinkingBubble.textContent = data.reply || 'Sorry, something went wrong.';
+  } catch (err) {
+    thinkingBubble.textContent = 'Connection error — is the function deployed?';
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+</script>
+</body>
+</html>
