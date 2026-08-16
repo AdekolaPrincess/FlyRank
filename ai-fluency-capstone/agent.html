@@ -28,11 +28,11 @@
   <div class="wrap">
     <span class="eyebrow">Live demo</span>
     <h1>Talk to my agent</h1>
-    <p style="max-width:60ch;"> This is a small agent I built and shipped as part of my AI fluency capstone. Ask it about my projects.</p>
+    <p style="max-width:60ch;">This is a small agent I built and shipped as part of my AI fluency capstone. Ask it about my background or the projects on this site.</p>
 
     <div class="chat-shell">
       <div class="chat-log" id="chatLog">
-        <div class="msg agent">Hi ask me anything about Princess's work.</div>
+        <div class="msg agent">Hi, ask me anything about Princess's work.</div>
       </div>
       <div class="chat-input-row">
         <input id="chatInput" type="text" placeholder="Type a message…" autocomplete="off">
@@ -43,7 +43,7 @@
 </main>
 
 <footer>
-  <div class="wrap">© <span id="year"></span> Princess. Agent responses are generated, not pre-written.</div>
+  <div class="wrap">© <span id="year"></span> Adekola Princess. Agent responses are generated, not pre-written.</div>
 </footer>
 
 <script>
@@ -71,7 +71,7 @@ async function sendMessage() {
   const thinkingBubble = log.lastChild;
 
   try {
-    const res = await fetch('/.netlify/functions/chat', {
+    const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
