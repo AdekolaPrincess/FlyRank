@@ -3,13 +3,14 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import sqlite3
 from enum import Enum
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from fastapi.middleware.cors import CORSMiddleware
+from src.llm.triage import run_triage
 
 
 security = HTTPBearer()
@@ -260,6 +261,13 @@ def logout(user = Depends(get_current_user)):
     supabase.auth.sign_out()
     return None
 
+def load_prompt(filename: str) -> str:
+    """Reads a prompt file from the prompts/ folder and returns its text."""
+    with open(f"prompts/{filename}", "r", encoding="utf-8") as f:
+        return f.read()
+
+TRIAGE_PROMPT = load_prompt("triage-v1.md")
+
 @app.post("/triage", summary="Classify a support message")
 def triage_message(input: TriageInput) -> TriageOutput:
     """Takes a support message and returns a category, urgency, and suggested team."""
@@ -272,7 +280,11 @@ def triage_message(input: TriageInput) -> TriageOutput:
             reason="stub mode - no model call made"
         )
 
-    # Real AI logic goes here in Stage 2 — for now, same placeholder as before
+    # Real AI call
+    raw_reply = run_triage(input.text)
+    print("RAW MODEL REPLY:", raw_reply)  
+
+   
     return TriageOutput(
         category=Category.other,
         urgency=Urgency.low,
