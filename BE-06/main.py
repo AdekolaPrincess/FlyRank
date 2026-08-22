@@ -1,16 +1,17 @@
 import os
+import json
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 import sqlite3
 from enum import Enum
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from src.llm.triage import run_triage
+from src.llm.triage import run_triage, parse_model_output, repair_triage, log_quarantine
 
 
 security = HTTPBearer()
@@ -280,15 +281,24 @@ def triage_message(input: TriageInput) -> TriageOutput:
             reason="stub mode - no model call made"
         )
 
-    # Real AI call
+        # Real AI call
     raw_reply = run_triage(input.text)
-    print("RAW MODEL REPLY:", raw_reply)  
+    print("RAW MODEL REPLY:", raw_reply)
 
-   
-    return TriageOutput(
-        category=Category.other,
-        urgency=Urgency.low,
-        suggested_team=Team.support_team,
-        confidence=0.0,
-        reason="AI not wired yet"
-    )
+    try:
+        parsed = parse_model_output(raw_reply)
+        validated = TriageOutput(**parsed)
+        return validated
+    except (json.JSONDecodeError, ValidationError) as e:
+        print("FIRST ATTEMPT FAILED:", e)
+        # Repair retry - one more chance
+        repaired_reply = repair_triage(input.text, raw_reply, str(e))
+        print("REPAIR REPLY:", repaired_reply)
+        try:
+            parsed = parse_model_output(repaired_reply)
+            validated = TriageOutput(**parsed)
+            return validated
+        except (json.JSONDecodeError, ValidationError) as e2:
+            print("REPAIR ALSO FAILED:", e2)
+            log_quarantine(input.text, repaired_reply, str(e2))
+            raise HTTPException(status_code=422, detail="Model could not produce a valid response after one repair attempt")
