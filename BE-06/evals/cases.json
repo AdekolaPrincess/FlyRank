@@ -1,0 +1,10 @@
+[
+  { "text": "I was charged $49.99 twice this month for the same subscription.", "expected_category": "billing" },
+  { "text": "The app keeps freezing whenever I try to upload a photo.", "expected_category": "bug" },
+  { "text": "I can't log into my account, it says my password is wrong even though it isn't.", "expected_category": "account" },
+  { "text": "My order was supposed to arrive 3 days ago and tracking hasn't updated.", "expected_category": "shipping" },
+  { "text": "Do you offer discounts for students?", "expected_category": "enquiry" },
+  { "text": "asdkfjaslkdjf random keys nothing meaningful here", "expected_category": "other" },
+  { "text": "I want to delete my account and also get a refund for last month, and also the app crashed twice yesterday.", "expected_category": "other" },
+  { "text": "Great app, just wanted to say thanks for the update!", "expected_category": "other" }
+]
