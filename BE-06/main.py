@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.exceptions import RequestValidationError
@@ -8,10 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional
 import sqlite3
+from openai import APITimeoutError, AuthenticationError
 from enum import Enum
 from dotenv import load_dotenv
 from supabase import create_client, Client
-from src.llm.triage import run_triage, parse_model_output, repair_triage, log_quarantine
+from src.llm.triage import run_triage_with_retry, parse_model_output, repair_triage, log_quarantine, log_cost
 
 
 security = HTTPBearer()
@@ -272,6 +274,15 @@ TRIAGE_PROMPT = load_prompt("triage-v1.md")
 @app.post("/triage", summary="Classify a support message")
 def triage_message(input: TriageInput) -> TriageOutput:
     """Takes a support message and returns a category, urgency, and suggested team."""
+    if os.getenv("LLM_ENABLED", "true").lower() == "false":
+        return TriageOutput(
+            category=Category.other,
+            urgency=Urgency.low,
+            suggested_team=Team.support_team,
+            confidence=0.0,
+            reason="AI triage is currently disabled"
+        )
+
     if os.getenv("LLM_STUB") == "1":
         return TriageOutput(
             category=Category.other,
@@ -281,22 +292,34 @@ def triage_message(input: TriageInput) -> TriageOutput:
             reason="stub mode - no model call made"
         )
 
-        # Real AI call
-    raw_reply = run_triage(input.text)
+    # Real AI call
+    start = time.time()
+    try:
+        response = run_triage_with_retry(input.text)
+    except APITimeoutError:
+        raise HTTPException(status_code=504, detail="The model took too long to respond. Please try again.")
+    except AuthenticationError:
+        raise HTTPException(status_code=401, detail="The AI provider rejected our API key. Check server configuration.")
+    duration_ms = (time.time() - start) * 1000
+    raw_reply = response.choices[0].message.content
     print("RAW MODEL REPLY:", raw_reply)
 
     try:
         parsed = parse_model_output(raw_reply)
         validated = TriageOutput(**parsed)
+        log_cost("triage-v1", os.environ["LLM_MODEL"], response.usage, duration_ms, repaired=False)
         return validated
     except (json.JSONDecodeError, ValidationError) as e:
         print("FIRST ATTEMPT FAILED:", e)
         # Repair retry - one more chance
+        repair_start = time.time()
         repaired_reply = repair_triage(input.text, raw_reply, str(e))
+        repair_duration_ms = (time.time() - repair_start) * 1000
         print("REPAIR REPLY:", repaired_reply)
         try:
             parsed = parse_model_output(repaired_reply)
             validated = TriageOutput(**parsed)
+            log_cost("triage-v1", os.environ["LLM_MODEL"], None, duration_ms + repair_duration_ms, repaired=True)
             return validated
         except (json.JSONDecodeError, ValidationError) as e2:
             print("REPAIR ALSO FAILED:", e2)
