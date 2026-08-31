@@ -22,16 +22,91 @@ def build_html(data):
     html = f"""
     <html>
     <head>
-        <style>
-            body {{ font-family: Arial, sans-serif; }}
-            table {{ border-collapse: collapse; width: 100%; margin-bottom: 30px; }}
-            th, td {{ border: 1px solid #ccc; padding: 6px 10px; text-align: left; }}
+                <style>
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                color: #2d2d2d;
+                margin: 0;
+                padding: 0;
+            }}
+            h1 {{
+                color: #6c3ce9;
+                font-size: 26px;
+                margin-bottom: 4px;
+            }}
+            h1 + p {{
+                color: #888;
+                margin-top: 0;
+                margin-bottom: 24px;
+            }}
+            h2 {{
+                color: #2d2d2d;
+                font-size: 18px;
+                border-bottom: 3px solid #6c3ce9;
+                display: inline-block;
+                padding-bottom: 4px;
+                margin-top: 30px;
+            }}
+            .stats {{
+                display: flex;
+                gap: 16px;
+                margin-bottom: 30px;
+            }}
+            .stat-card {{
+                flex: 1;
+                background: #f4f0fd;
+                border-left: 5px solid #6c3ce9;
+                border-radius: 6px;
+                padding: 14px 18px;
+            }}
+            .stat-card .label {{
+                font-size: 13px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            .stat-card .value {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #6c3ce9;
+            }}
+            table {{
+                border-collapse: collapse;
+                width: 100%;
+                margin-bottom: 20px;
+            }}
+            th {{
+                background: #6c3ce9;
+                color: white;
+                text-align: left;
+                padding: 8px 10px;
+                font-size: 13px;
+            }}
+            td {{
+                padding: 7px 10px;
+                font-size: 13px;
+                border-bottom: 1px solid #eee;
+            }}
+            tbody tr:nth-child(even) {{
+                background: #f7f5fc;
+            }}
+            tr {{ break-inside: avoid; }}
         </style>
     </head>
-    <body>
-        <h1>Book Report : {today}</h1>
-        <p><strong>Total books:</strong> {data['total_books']}</p>
-        <p><strong>Average price:</strong> £{data['average_price']}</p>
+        <body>
+        <h1>Book Report</h1>
+        <p>{today}</p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">Total Books</div>
+                <div class="value">{data['total_books']}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Average Price</div>
+                <div class="value">£{data['average_price']}</div>
+            </div>
+        </div>
 
         <h2>Top 5 Most Expensive Books</h2>
         <table>
@@ -55,7 +130,7 @@ def build_html(data):
     """
     return html
 
-async def render_pdf(htm, output_path):
+async def render_pdf(html, output_path):
     async with async_playwright() as p:
         browser =  await p.chromium.launch()
         page = await browser.new_page()
