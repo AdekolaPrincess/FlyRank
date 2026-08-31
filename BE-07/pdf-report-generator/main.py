@@ -6,10 +6,16 @@ import asyncio
 from datetime import date, datetime
 from report_data import get_report_data
 from render_report import build_html, render_pdf
+from pydantic import BaseModel
+from fastapi import Response
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 app = FastAPI()
+
+class ReportRequest(BaseModel):
+    force: bool = False
 
 def get_db_connection():
     conn = sqlite3.connect("report.db")
@@ -34,9 +40,21 @@ init_reports_table()
 def health():
     return{"status": "ok"}
 
-@app.post("/reports", status_code = 201)
-async def create_report():
+@app.post("/reports", status_code=201)
+async def create_report(request: ReportRequest = ReportRequest(), response: Response = None):
     conn = get_db_connection()
+
+    if not request.force:
+        today_str = str(date.today())
+        existing = conn.execute(
+            "SELECT * FROM reports WHERE created_at = ? ORDER BY id DESC LIMIT 1",
+            (today_str,)
+        ).fetchone()
+
+        if existing is not None:
+            conn.close()
+            response.status_code = 200
+            return {"id": existing["id"], "file": f"/reports/{existing['id']}/file"}
 
     data = get_report_data()
     html = build_html(data)
@@ -44,7 +62,7 @@ async def create_report():
     cursor = conn.execute("INSERT INTO reports (path, created_at) VALUES (?, ?)", ("", str(date.today())))
     report_id = cursor.lastrowid
 
-    output_path =  f"reports/{report_id}.pdf"
+    output_path = f"reports/{report_id}.pdf"
     await render_pdf(html, output_path)
 
     conn.execute("UPDATE reports SET path = ? WHERE id = ?", (output_path, report_id))
