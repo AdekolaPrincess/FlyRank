@@ -1,9 +1,4 @@
-// This runs on Vercel's servers, not in the browser — so your API
-// key stays hidden. Uses Google's Gemini API, free tier, no card
-// needed. Get a key at aistudio.google.com and set GEMINI_API_KEY
-// in Vercel's dashboard under Settings → Environment Variables.
-
-const SYSTEM_PROMPT = "You are the personal agent of Princess, built as part of an AI fluency capstone project. Help visitors learn about their background, skills, and the projects listed on this site. Answer questions clearly and concisely, in a friendly but professional tone. If you don't know something specific about them, say so honestly rather than guessing.";
+const SYSTEM_PROMPT = 'You are the personal agent of Princess, built as part of an AI fluency capstone project. Help visitors learn about their background, skills, and the projects listed on this site. Answer questions clearly and concisely, in a friendly but professional tone. If you do not know something specific about them, say so honestly rather than guessing';
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -14,7 +9,7 @@ module.exports = async (req, res) => {
     const { message } = req.body;
 
     const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
       {
         method: 'POST',
         headers: {
